@@ -21,6 +21,7 @@
 #include <vcl_cstring.h>
 #include <vcl_climits.h>
 #include <vil/vil_memory_chunk.h>
+#include <memory>
 
 extern "C" {
 #if FFMPEG_IN_SEVERAL_DIRECTORIES
@@ -122,6 +123,17 @@ open()
   //os_->fmt_cxt_->nb_streams = 1;
 
   AVCodecContext *video_enc = st->codec;
+
+  struct AVDictionaryDeleter
+  {
+      void operator()(AVDictionary** dict)
+      {
+          av_dict_free(dict);
+          delete dict;
+      }
+  };
+
+  std::unique_ptr<AVDictionary*, AVDictionaryDeleter> dict(NULL, AVDictionaryDeleter());
 
   if (vcl_strcmp(file_oformat->name, "mp4") != 0 ||
       vcl_strcmp(file_oformat->name, "mov") != 0 ||
@@ -305,11 +317,11 @@ open()
   }
   if (params_.use_qprd_)
   {
-    video_enc->flags |= CODEC_FLAG_QP_RD;
+    av_dict_set( dict.get(), "mpv_flags", "+qp_rd", 0 );
   }
   if (params_.use_cbprd_)
   {
-    video_enc->flags |= CODEC_FLAG_CBP_RD;
+    av_dict_set( dict.get(), "mpv_flags", "+cbp_rd", 0 );
   }
   if (params_.b_frames_)
   {
@@ -397,7 +409,7 @@ open()
 
   //dump_format( os_->fmt_cxt_, 1, filename_, 1 );
 
-  if ( avcodec_open2( video_enc, codec, NULL ) < 0 )
+  if ( avcodec_open2( video_enc, codec, dict.get() ) < 0 )
   {
     vcl_cerr << "ffmpeg: couldn't open codec\n";
     close();

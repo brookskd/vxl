@@ -134,6 +134,7 @@ ENDIF(VIDEODEV2_FOUND)
 AUX_SOURCE_DIRECTORY(Templates vidl_sources)
 
 ADD_LIBRARY(vidl ${vidl_sources})
+SET_PROPERTY(TARGET vidl PROPERTY CXX_STANDARD 11)
 INSTALL_TARGETS(/lib vidl)
 INSTALL_NOBASE_HEADER_FILES(/include/vxl/core/vidl ${vidl_sources})
 
